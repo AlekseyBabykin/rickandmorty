@@ -9,7 +9,6 @@
           <option value="dead">dead</option>
         </select>
         <button @click="fetchHeroSearch">Apply</button>
-        <!-- changed onclick to click -->
       </div>
     </div>
 
@@ -25,6 +24,7 @@
 </template>
 
 <script>
+import { ref, reactive, onMounted } from "vue";
 import iconsearch from "../src/icons/search-circle.svg";
 import axios from "axios";
 import MyCardCharacters from "./components/MyCardCharacters.vue";
@@ -32,61 +32,72 @@ import Pagination from "./components/Pagination.vue";
 
 export default {
   components: { MyCardCharacters, Pagination },
-  data() {
-    return {
-      characters: [],
-      searchQuery: "",
-      selected: "alive",
-      currentPage: 1,
-      totalPage: 0,
-      prev: null,
-      next: null,
-    };
-  },
-  methods: {
-    async fetchCharacters(url) {
+  setup() {
+    const characters = ref([]);
+    const searchQuery = ref("");
+    const selected = ref("alive");
+    const currentPage = ref(1);
+    const totalPage = ref(0);
+    const prev = ref(null);
+    const next = ref(null);
+
+    const fetchCharacters = async (url) => {
       try {
         const response = await axios.get(url);
-        this.characters = response.data.results;
-        this.totalPage = response.data.info.pages;
-        this.prev = response.data.info.prev;
-        this.next = response.data.info.next;
-        this.fetchError = null; // Reset fetch error
+        characters.value = response.data.results;
+        totalPage.value = response.data.info.pages;
+        prev.value = response.data.info.prev;
+        next.value = response.data.info.next;
         console.log(response);
       } catch (error) {
-        aler("Error", error);
+        alert("Error");
         console.error("Fetch characters error:", error);
       }
-    },
-    async fetchHeroSearch() {
-      const url = `https://rickandmortyapi.com/api/character/?name=${this.searchQuery}&status=${this.selected}`;
-      this.fetchCharacters(url);
-    },
-    updatePage(page) {
-      this.currentPage = page;
-      const url = `https://rickandmortyapi.com/api/character/?page=${page}&name=${this.searchQuery}&status=${this.selected}`;
-      this.fetchCharacters(url);
-    },
-    goToNextPage() {
-      if (this.next) {
-        this.fetchCharacters(this.next);
+    };
+
+    const fetchHeroSearch = () => {
+      const url = `https://rickandmortyapi.com/api/character/?name=${searchQuery.value}&status=${selected.value}`;
+      fetchCharacters(url);
+    };
+
+    const updatePage = (page) => {
+      currentPage.value = page;
+      const url = `https://rickandmortyapi.com/api/character/?page=${page}&name=${searchQuery.value}&status=${selected.value}`;
+      fetchCharacters(url);
+    };
+
+    const goToNextPage = () => {
+      if (next.value) {
+        fetchCharacters(next.value);
       }
-    },
-    goToPrevPage() {
-      if (this.prev) {
-        this.fetchCharacters(this.prev);
+    };
+
+    const goToPrevPage = () => {
+      if (prev.value) {
+        fetchCharacters(prev.value);
       }
-    },
-  },
-  mounted() {
-    this.fetchCharacters(
-      `https://rickandmortyapi.com/api/character/?page=${this.currentPage}`
-    );
-  },
-  computed: {
-    iconsearch() {
-      return iconsearch;
-    },
+    };
+
+    onMounted(() => {
+      fetchCharacters(
+        `https://rickandmortyapi.com/api/character/?page=${currentPage.value}`
+      );
+    });
+
+    return {
+      iconsearch,
+      characters,
+      searchQuery,
+      selected,
+      currentPage,
+      totalPage,
+      prev,
+      next,
+      fetchHeroSearch,
+      updatePage,
+      goToNextPage,
+      goToPrevPage,
+    };
   },
 };
 </script>
